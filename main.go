@@ -8,5 +8,5 @@ import (
 
 func main() {
 	ip, _ := util.GetIPAddr()
-	fmt.Println("ip: %v\n", ip)
+	fmt.Printf("ip: %v\n", ip)
 }

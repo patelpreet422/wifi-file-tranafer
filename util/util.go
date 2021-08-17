@@ -25,8 +25,6 @@ func GetIPAddr() (string, error) {
 			switch v := addr.(type) {
 			case *net.IPNet:
 				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
 			}
 
 			if !ip.IsLoopback() {
