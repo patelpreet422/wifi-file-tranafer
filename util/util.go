@@ -2,7 +2,11 @@ package util
 
 import (
 	"errors"
+	"io/ioutil"
 	"net"
+	"os"
+
+	"github.com/jhoonb/archivex"
 )
 
 func GetIPAddr() (string, error) {
@@ -34,4 +38,76 @@ func GetIPAddr() (string, error) {
 	}
 	return "", errors.New("util.getIPAddr(): No local IP found")
 
+}
+
+func getAllExistingFiles(files []string) []string {
+	existingFiles := []string{}
+	for _, file := range files {
+		_, err := os.Stat(file)
+		if err == nil {
+			existingFiles = append(existingFiles, file)
+		}
+	}
+	return existingFiles
+}
+
+func shouldZip(validFiles []string) bool {
+	zipRequired := len(validFiles) >= 2
+
+	for _, file := range validFiles {
+		metadata, _ := os.Stat(file)
+		if metadata.IsDir() {
+			zipRequired = true
+		}
+	}
+
+	return zipRequired
+}
+
+func zipFiles(files []string) (string, error) {
+	zip := new(archivex.ZipFile)
+	tmpFile, err := ioutil.TempFile("", "wft.zip")
+	if err != nil {
+		return "", err
+	}
+	defer tmpFile.Close()
+
+	zip.Create(tmpFile.Name())
+	for _, fileName := range files {
+		metadata, err := os.Stat(fileName)
+		if err != nil {
+			return "", err
+		}
+		if metadata.IsDir() {
+			zip.AddAll(fileName, true)
+		} else {
+			file, err := os.Open(fileName)
+			if err != nil {
+				return "", err
+			}
+			defer file.Close()
+			if err := zip.Add(fileName, file, metadata); err != nil {
+				return "", err
+			}
+		}
+	}
+	if err := zip.Close(); err != nil {
+		return "", err
+	}
+	return zip.Name, nil
+
+}
+
+func GetPayloadFromArgs(fileArgs []string) (string, error) {
+	files := getAllExistingFiles(fileArgs)
+	zipRequired := shouldZip(files)
+
+	if zipRequired {
+		zip, err := zipFiles(files)
+		if err != nil {
+			return "", err
+		}
+		return zip, nil
+	}
+	return fileArgs[0], nil
 }

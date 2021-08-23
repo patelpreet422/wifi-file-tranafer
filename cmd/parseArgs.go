@@ -4,14 +4,52 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	"github.com/fatih/color"
+	"github.com/jhoonb/archivex"
 )
 
 type ParsedArgs struct {
 	Command Command
 	Port    int
 	Files   []string
+}
+
+func ZipFiles(files []string) (string, error) {
+	zip := new(archivex.ZipFile)
+	tmpfile, err := ioutil.TempFile("", "output")
+	if err != nil {
+		return "", err
+	}
+	tmpfile.Close()
+	if err := os.Rename(tmpfile.Name(), tmpfile.Name()+".zip"); err != nil {
+		return "", err
+	}
+	zip.Create(tmpfile.Name() + ".zip")
+	for _, filename := range files {
+		fileinfo, err := os.Stat(filename)
+		if err != nil {
+			return "", err
+		}
+		if fileinfo.IsDir() {
+			zip.AddAll(filename, true)
+		} else {
+			file, err := os.Open(filename)
+			if err != nil {
+				return "", err
+			}
+			defer file.Close()
+			if err := zip.Add(filename, file, fileinfo); err != nil {
+				return "", err
+			}
+		}
+	}
+	if err := zip.Close(); err != nil {
+		return "", nil
+	}
+	return zip.Name, nil
 }
 
 func ParseCommandLineArgs() (ParsedArgs, error) {
