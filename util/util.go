@@ -2,10 +2,13 @@ package util
 
 import (
 	"errors"
+	"fmt"
+
 	"io/ioutil"
 	"net"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/jhoonb/archivex"
 )
 
@@ -46,6 +49,9 @@ func getAllExistingFiles(files []string) []string {
 		_, err := os.Stat(file)
 		if err == nil {
 			existingFiles = append(existingFiles, file)
+		} else {
+			bold := color.New(color.Attribute(color.Bold))
+			fmt.Printf("%v %v\n", color.YellowString("ignoring"), bold.Sprint(file))
 		}
 	}
 	return existingFiles
@@ -110,5 +116,10 @@ func GetPayloadFromArgs(fileArgs []string) (string, error) {
 		}
 		return zip, nil
 	}
-	return fileArgs[0], nil
+
+	if len(files) != 0 {
+		return fileArgs[0], nil
+	}
+
+	return "", nil
 }
