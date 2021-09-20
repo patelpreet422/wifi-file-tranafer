@@ -66,11 +66,12 @@ func shouldZip(validFiles []string) bool {
 
 func zipFiles(files []string) (string, error) {
 	zip := new(archivex.ZipFile)
-	tmpFile, err := ioutil.TempFile("", "wft.zip")
+	tmpFile, err := ioutil.TempFile("", "wft")
 	if err != nil {
 		return "", err
 	}
 	defer tmpFile.Close()
+	defer os.Remove(tmpFile.Name())
 
 	zip.Create(tmpFile.Name())
 	for _, fileName := range files {
